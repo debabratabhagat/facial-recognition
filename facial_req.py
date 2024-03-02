@@ -9,19 +9,26 @@ import cv2
 # initialize 'currentname' to trigger only when a new person is identified
 currentname = "unknown"
 # determine faces from encodings.pickle file model created from train_model.py
-encodingsP = "encodings.pickle"
+encodingsP = "./encodings.pickle"
+
 # use this xml file
+
 cascade = "haarcascade_frontalface_default.xml"
 
 # load the known faces and embeddings along with OpenCV's Haar
 # cascade for face detection
+
 print("[INFO] loading encodings + face detector...")
 data = pickle.loads(open(encodingsP, "rb").read())
+
+# print(data['names'])
+
 detector = cv2.CascadeClassifier(cascade)
 
 # initialize the video stream and allow the camera sensor to warm up
 print("[INFO] starting video stream...")
 vs = VideoStream(src=0).start()
+
 #vs = VideoStream(usePiCamera=True).start()
 time.sleep(2.0)
 
@@ -37,31 +44,41 @@ while True:
 	
 	# convert the input frame from (1) BGR to grayscale (for face
 	# detection) and (2) from BGR to RGB (for face recognition)
+
 	gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 	rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
 	# detect faces in the grayscale frame
 	rects = detector.detectMultiScale(gray, scaleFactor=1.1, 
-		minNeighbors=5, minSize=(30, 30),
+		minNeighbors=6, minSize=(60, 60),
 		flags=cv2.CASCADE_SCALE_IMAGE)
+
+	# print(rects)
 
 	# OpenCV returns bounding box coordinates in (x, y, w, h) order
 	# but we need them in (top, right, bottom, left) order, so we
 	# need to do a bit of reordering
+
 	boxes = [(y, x + w, y + h, x) for (x, y, w, h) in rects]
+	# print(boxes)
+	# print(type(boxes))
+	# print(type(boxes[0]))
 
 	# compute the facial embeddings for each face bounding box
+
 	encodings = face_recognition.face_encodings(rgb, boxes)
 	names = []
 
 	# loop over the facial embeddings
+
 	for encoding in encodings:
 		# attempt to match each face in the input image to our known
 		# encodings
 		matches = face_recognition.compare_faces(data["encodings"],
-			encoding)
+			encoding,tolerance= 0.4)
 		name = "Unknown" # if face is not recognized, then print Unknown
 
+		# print(matches)
 		# check to see if we have found a match
 		if True in matches:
 			# find the indexes of all matched faces then initialize a
@@ -74,6 +91,7 @@ while True:
 			# each recognized face
 			for i in matchedIdxs:
 				name = data["names"][i]
+				# print(counts.get(name, 0))
 				counts[name] = counts.get(name, 0) + 1
 
 			# determine the recognized face with the largest number
@@ -81,10 +99,11 @@ while True:
 			# will select first entry in the dictionary)
 			name = max(counts, key=counts.get)
 			
+
 			# if someone in your dataset is identified, print their name on the screen
 			if currentname != name:
 				currentname = name
-				print(currentname)
+				print(currentname,counts)
 		
 		# update the list of names
 		names.append(name)
