@@ -2,6 +2,8 @@ venv/
 .env
 encodings.pickle
 
+#
+Tweaking/distance_lfw_hog.csv
 # Joyce/
 Lucy/
 image.jpg
